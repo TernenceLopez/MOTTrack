@@ -167,7 +167,7 @@ class ImageDataManager(DataManager):
         load_train_targets=False,
         batch_size_train=32,
         batch_size_test=32,
-        workers=0,
+        workers=0,  # 根据需要修改是否允许多线程加载数据集
         num_instances=4,
         num_cams=1,
         num_datasets=1,
