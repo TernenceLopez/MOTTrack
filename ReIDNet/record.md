@@ -17,6 +17,25 @@ Rank-20 : 84.1%
 Checkpoint saved to "log/osnet/model/model.pth.tar-100"
 Elapsed 1:35:43
 
+=> Final test
+##### Evaluating market1501 (source) #####
+Extracting features from query set ...
+Done, obtained 3368-by-512 matrix
+Extracting features from gallery set ...
+Done, obtained 15913-by-512 matrix
+Speed: 0.0230 sec/batch
+Computing distance matrix with metric=euclidean ...
+Computing CMC and mAP ...
+** Results **
+mAP: 47.2%
+CMC curve
+Rank-1  : 68.4%
+Rank-5  : 86.2%
+Rank-10 : 91.2%
+Rank-20 : 94.6%
+Checkpoint saved to "log/osnet\model\model.pth.tar-300"
+Elapsed 5:41:53
+
 resnet18						Parameters: 11176512			FLOPs:1184366592
 resnet34						Parameters: 21284672			FLOPs:2392326144
 resnet50						Parameters: 23508032			FLOPs:2669150208
