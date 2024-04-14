@@ -18,7 +18,7 @@ if __name__ == '__main__':
         combineall=True
     )
     model = torchreid.models.build_model(
-        name="osnet_x0_25",
+        name="osnet_x1_0",
         num_classes=datamanager.num_train_pids,
         loss="softmax",
         pretrained=False
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     )
     engine.run(
         save_dir="log/osnet",
-        max_epoch=100,
+        max_epoch=300,
         eval_freq=10,
         print_freq=10,
         fixbase_epoch=5,
