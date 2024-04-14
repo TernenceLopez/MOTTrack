@@ -1,9 +1,13 @@
 from __future__ import division, print_function, absolute_import
 
+from torch import nn
 from torchreid.reid import metrics
 from torchreid.reid.losses import CrossEntropyLoss
 
+from ReIDNet.distillation_utils.constant_param import opt
 from ReIDNet.distillation_utils.engine import Engine
+from ReIDNet.distillation_utils.experimental import get_s_feas_by_hook, get_t_feas_by_hook
+from ReIDNet.distillation_utils.kd_loss import compute_kd_output_loss, EFKD
 
 
 # from torchreid.reid.engine.engine import Engine
@@ -77,16 +81,38 @@ class ImageSoftmaxEngine(Engine):
             use_gpu=self.use_gpu,
             label_smooth=label_smooth
         )
+        self.eat_loss = EFKD(opt.isL)
+        # self.sigmod_fun = nn.Sigmoid()
+        # self.sigmod_fun_2 = nn.Sigmoid()
 
-    def forward_backward(self, data):
+    def forward_backward(self, data, teacher_model, kd):
+        # 子类重写父类方法
         imgs, pids = self.parse_data_for_train(data)
 
         if self.use_gpu:
             imgs = imgs.cuda()
             pids = pids.cuda()
 
-        outputs = self.model(imgs)
-        loss = self.compute_loss(self.criterion, outputs, pids)
+        loss = 0
+        if not kd:  # 不进行知识蒸馏
+            outputs = self.model(imgs)
+            loss = self.compute_loss(self.criterion, outputs, pids)
+        else:  # 进行知识蒸馏
+            s_f = get_s_feas_by_hook(self.model)  # hook机制
+            student_pred = self.model(imgs)  # forward
+            t_f = get_t_feas_by_hook(teacher_model)
+            teacher_pred = teacher_model(imgs)
+            loss_hard = self.compute_loss(self.criterion, student_pred, pids)  # 硬标签损失
+            ftloss, ftloss_items = self.eat_loss(pids.cuda(), t_f, s_f, opt.ratio)  # 特征图转移损失
+            kdloss = compute_kd_output_loss(student_pred,
+                                            teacher_pred,
+                                            self.model,
+                                            opt.kd_loss_selected,
+                                            opt.temperature)  # 软标签损失
+            # theta = self.sigmod_fun(theta)
+            # beta = self.sigmod_fun_2(beta)
+            # loss = loss_hard + beta * kdloss + theta * ftloss
+            loss = loss_hard + kdloss + ftloss
 
         self.optimizer.zero_grad()
         loss.backward()
