@@ -111,23 +111,25 @@ class Engine(object):
                 self._scheds[name].step()
 
     def run(
-        self,
-        save_dir='log',
-        max_epoch=0,
-        start_epoch=0,
-        print_freq=10,
-        fixbase_epoch=0,
-        open_layers=None,
-        start_eval=0,
-        eval_freq=-1,
-        test_only=False,
-        dist_metric='euclidean',
-        normalize_feature=False,
-        visrank=False,
-        visrank_topk=10,
-        use_metric_cuhk03=False,
-        ranks=[1, 5, 10, 20],
-        rerank=False
+            self,
+            save_dir='log',
+            max_epoch=0,
+            start_epoch=0,
+            print_freq=10,
+            fixbase_epoch=0,
+            open_layers=None,
+            start_eval=0,
+            eval_freq=-1,
+            test_only=False,
+            dist_metric='euclidean',
+            normalize_feature=False,
+            visrank=False,
+            visrank_topk=10,
+            use_metric_cuhk03=False,
+            ranks=[1, 5, 10, 20],
+            rerank=False,
+            teacher_model=None,
+            kd=False
     ):
         r"""A unified pipeline for training and evaluating a model.
 
@@ -190,13 +192,15 @@ class Engine(object):
             self.train(
                 print_freq=print_freq,
                 fixbase_epoch=fixbase_epoch,
-                open_layers=open_layers
+                open_layers=open_layers,
+                teacher_model=teacher_model,
+                kd=kd
             )
 
             if (self.epoch + 1) >= start_eval \
-               and eval_freq > 0 \
-               and (self.epoch+1) % eval_freq == 0 \
-               and (self.epoch + 1) != self.max_epoch:
+                    and eval_freq > 0 \
+                    and (self.epoch + 1) % eval_freq == 0 \
+                    and (self.epoch + 1) != self.max_epoch:
                 rank1 = self.test(
                     dist_metric=dist_metric,
                     normalize_feature=normalize_feature,
@@ -227,7 +231,7 @@ class Engine(object):
         if self.writer is not None:
             self.writer.close()
 
-    def train(self, print_freq=10, fixbase_epoch=0, open_layers=None):
+    def train(self, print_freq=10, fixbase_epoch=0, open_layers=None, teacher_model=None, kd=False):
         losses = MetricMeter()
         batch_time = AverageMeter()
         data_time = AverageMeter()
@@ -242,16 +246,16 @@ class Engine(object):
         end = time.time()
         for self.batch_idx, data in enumerate(self.train_loader):
             data_time.update(time.time() - end)
-            loss_summary = self.forward_backward(data)
+            loss_summary = self.forward_backward(data, teacher_model, kd)
             batch_time.update(time.time() - end)
             losses.update(loss_summary)
 
             if (self.batch_idx + 1) % print_freq == 0:
                 nb_this_epoch = self.num_batches - (self.batch_idx + 1)
                 nb_future_epochs = (
-                    self.max_epoch - (self.epoch + 1)
-                ) * self.num_batches
-                eta_seconds = batch_time.avg * (nb_this_epoch+nb_future_epochs)
+                                           self.max_epoch - (self.epoch + 1)
+                                   ) * self.num_batches
+                eta_seconds = batch_time.avg * (nb_this_epoch + nb_future_epochs)
                 eta_str = str(datetime.timedelta(seconds=int(eta_seconds)))
                 print(
                     'epoch: [{0}/{1}][{2}/{3}]\t'
@@ -286,19 +290,19 @@ class Engine(object):
 
         self.update_lr()
 
-    def forward_backward(self, data):
+    def forward_backward(self, data, teacher_model, kd):
         raise NotImplementedError
 
     def test(
-        self,
-        dist_metric='euclidean',
-        normalize_feature=False,
-        visrank=False,
-        visrank_topk=10,
-        save_dir='',
-        use_metric_cuhk03=False,
-        ranks=[1, 5, 10, 20],
-        rerank=False
+            self,
+            dist_metric='euclidean',
+            normalize_feature=False,
+            visrank=False,
+            visrank_topk=10,
+            save_dir='',
+            use_metric_cuhk03=False,
+            ranks=[1, 5, 10, 20],
+            rerank=False
     ):
         r"""Tests model on target datasets.
 
@@ -343,18 +347,18 @@ class Engine(object):
 
     @torch.no_grad()
     def _evaluate(
-        self,
-        dataset_name='',
-        query_loader=None,
-        gallery_loader=None,
-        dist_metric='euclidean',
-        normalize_feature=False,
-        visrank=False,
-        visrank_topk=10,
-        save_dir='',
-        use_metric_cuhk03=False,
-        ranks=[1, 5, 10, 20],
-        rerank=False
+            self,
+            dataset_name='',
+            query_loader=None,
+            gallery_loader=None,
+            dist_metric='euclidean',
+            normalize_feature=False,
+            visrank=False,
+            visrank_topk=10,
+            save_dir='',
+            use_metric_cuhk03=False,
+            ranks=[1, 5, 10, 20],
+            rerank=False
     ):
         batch_time = AverageMeter()
 
@@ -454,7 +458,7 @@ class Engine(object):
         return imgs, pids, camids
 
     def two_stepped_transfer_learning(
-        self, epoch, fixbase_epoch, open_layers, model=None
+            self, epoch, fixbase_epoch, open_layers, model=None
     ):
         """Two-stepped transfer learning.
 
