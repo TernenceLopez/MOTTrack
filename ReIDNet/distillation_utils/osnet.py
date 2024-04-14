@@ -8,6 +8,8 @@ __all__ = [
     'osnet_x1_0', 'osnet_x0_75', 'osnet_x0_5', 'osnet_x0_25', 'osnet_ibn_x1_0'
 ]
 
+from torchreid.reid.utils import load_pretrained_weights
+
 pretrained_urls = {
     'osnet_x1_0':
         'https://drive.google.com/uc?id=1LaG1EJpHrxdAxKnSCJ_i0u-nbxSAeiFY',
@@ -476,8 +478,9 @@ def init_pretrained_weights(model, key=''):
     filename = key + '_imagenet.pth'
     cached_file = os.path.join(model_dir, filename)
 
-    # 模型不需要从google drive下载，直接存放在本地目录
-    cached_file = "./" + key + ".pt"
+    # 模型不需要从google drive下载，直接加载存放在本地目录的模型
+    # 官方代码有bug，无法正常加载ReID模型
+    # cached_file = "./" + key + ".pt"
 
     if not os.path.exists(cached_file):
         gdown.download(pretrained_urls[key], cached_file, quiet=False)
@@ -522,6 +525,11 @@ def init_pretrained_weights(model, key=''):
 ##########
 # Instantiation
 ##########
+def load_weight(model, key):
+    weight_path = "./" + key + ".pt"
+    load_pretrained_weights(model, weight_path)
+
+
 def osnet_x1_0(num_classes=1000, pretrained=True, loss='softmax', **kwargs):
     # standard size (width x1.0)
     model = OSNet(
@@ -533,7 +541,7 @@ def osnet_x1_0(num_classes=1000, pretrained=True, loss='softmax', **kwargs):
         **kwargs
     )
     if pretrained:
-        init_pretrained_weights(model, key='osnet_x1_0')
+        load_weight(model, key='osnet_x1_0')
     return model
 
 
@@ -548,7 +556,7 @@ def osnet_x0_75(num_classes=1000, pretrained=True, loss='softmax', **kwargs):
         **kwargs
     )
     if pretrained:
-        init_pretrained_weights(model, key='osnet_x0_75')
+        load_weight(model, key='osnet_x0_75')
     return model
 
 
@@ -563,7 +571,7 @@ def osnet_x0_5(num_classes=1000, pretrained=True, loss='softmax', **kwargs):
         **kwargs
     )
     if pretrained:
-        init_pretrained_weights(model, key='osnet_x0_5')
+        load_weight(model, key='osnet_x0_5')
     return model
 
 
@@ -578,7 +586,7 @@ def osnet_x0_25(num_classes=1000, pretrained=True, loss='softmax', **kwargs):
         **kwargs
     )
     if pretrained:
-        init_pretrained_weights(model, key='osnet_x0_25')
+        load_weight(model, key='osnet_x0_25')
     return model
 
 
@@ -597,5 +605,5 @@ def osnet_ibn_x1_0(
         **kwargs
     )
     if pretrained:
-        init_pretrained_weights(model, key='osnet_ibn_x1_0')
+        load_weight(model, key='osnet_ibn_x1_0')
     return model
