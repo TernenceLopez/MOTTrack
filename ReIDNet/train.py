@@ -2,12 +2,16 @@ import torchreid
 from multiprocessing import freeze_support
 import torch
 
+from ReIDNet.distillation_utils import build_model
+from ReIDNet.distillation_utils.datamanager import ImageDataManager
+from ReIDNet.distillation_utils.softmax import ImageSoftmaxEngine
+
 if __name__ == '__main__':
     freeze_support()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    datamanager = torchreid.data.ImageDataManager(
+    datamanager = ImageDataManager(
         root='reid-data',  # path to market1501
         sources='market1501',
         height=256,
@@ -17,13 +21,22 @@ if __name__ == '__main__':
         market1501_500k=False,
         combineall=True
     )
-    model = torchreid.models.build_model(
-        name="osnet_x1_0",
+    model = build_model(
+        name="osnet_x0_25",
         num_classes=datamanager.num_train_pids,
         loss="softmax",
         pretrained=False
     )
+
+    teacher_model = build_model(
+        name="osnet_x1_0",
+        num_classes=datamanager.num_train_pids,
+        loss="softmax",
+        pretrained=True
+    )
+
     model.to(device)
+    teacher_model.to(device)
     optimizer = torchreid.optim.build_optimizer(
         model,
         optim="sgd",
@@ -37,7 +50,7 @@ if __name__ == '__main__':
         lr_scheduler="single_step",
         stepsize=20
     )
-    engine = torchreid.engine.ImageSoftmaxEngine(
+    engine = ImageSoftmaxEngine(
         datamanager,
         model,
         optimizer=optimizer,
@@ -46,7 +59,7 @@ if __name__ == '__main__':
     )
     engine.run(
         save_dir="log/osnet",
-        max_epoch=300,
+        max_epoch=2,
         eval_freq=10,
         print_freq=10,
         fixbase_epoch=5,
