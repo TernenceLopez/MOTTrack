@@ -476,6 +476,9 @@ def init_pretrained_weights(model, key=''):
     filename = key + '_imagenet.pth'
     cached_file = os.path.join(model_dir, filename)
 
+    # 模型不需要从google drive下载，直接存放在本地目录
+    cached_file = "./" + key + ".pt"
+
     if not os.path.exists(cached_file):
         gdown.download(pretrained_urls[key], cached_file, quiet=False)
 
