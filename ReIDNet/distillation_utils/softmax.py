@@ -8,6 +8,7 @@ from ReIDNet.distillation_utils.constant_param import opt
 from ReIDNet.distillation_utils.engine import Engine
 from ReIDNet.distillation_utils.experimental import get_s_feas_by_hook, get_t_feas_by_hook
 from ReIDNet.distillation_utils.kd_loss import compute_kd_output_loss, EFKD
+from ReIDNet.kd_losses.st import SoftTarget
 
 
 # from torchreid.reid.engine.engine import Engine
@@ -81,7 +82,8 @@ class ImageSoftmaxEngine(Engine):
             use_gpu=self.use_gpu,
             label_smooth=label_smooth
         )
-        self.eat_loss = EFKD(opt.isL)
+        self.feature_loss = EFKD(opt.isL)  # 特征图转移损失
+        self.soft_loss = SoftTarget(opt.temperature)  # 软标签损失
         # self.sigmod_fun = nn.Sigmoid()
         # self.sigmod_fun_2 = nn.Sigmoid()
 
@@ -93,9 +95,10 @@ class ImageSoftmaxEngine(Engine):
             imgs = imgs.cuda()
             pids = pids.cuda()
 
+        student_pred = 0
         loss = 0
         if not kd:  # 不进行知识蒸馏
-            outputs = self.model(imgs)
+            student_pred = self.model(imgs)
             loss = self.compute_loss(self.criterion, outputs, pids)
         else:  # 进行知识蒸馏
             s_f = get_s_feas_by_hook(self.model)  # hook机制
@@ -103,12 +106,8 @@ class ImageSoftmaxEngine(Engine):
             t_f = get_t_feas_by_hook(teacher_model)
             teacher_pred = teacher_model(imgs)
             loss_hard = self.compute_loss(self.criterion, student_pred, pids)  # 硬标签损失
-            ftloss, ftloss_items = self.eat_loss(pids.cuda(), t_f, s_f, opt.ratio)  # 特征图转移损失
-            kdloss = compute_kd_output_loss(student_pred,
-                                            teacher_pred,
-                                            self.model,
-                                            opt.kd_loss_selected,
-                                            opt.temperature)  # 软标签损失
+            ftloss, ftloss_items = self.feature_loss(pids.cuda(), t_f, s_f, opt.ratio)  # 特征图转移损失
+            kdloss = self.soft_loss(student_pred, teacher_pred)  # 软标签损失
             # theta = self.sigmod_fun(theta)
             # beta = self.sigmod_fun_2(beta)
             # loss = loss_hard + beta * kdloss + theta * ftloss
@@ -120,7 +119,7 @@ class ImageSoftmaxEngine(Engine):
 
         loss_summary = {
             'loss': loss.item(),
-            'acc': metrics.accuracy(outputs, pids)[0].item()
+            'acc': metrics.accuracy(student_pred, pids)[0].item()
         }
 
         return loss_summary
