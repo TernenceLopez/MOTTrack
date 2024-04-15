@@ -99,7 +99,7 @@ class ImageSoftmaxEngine(Engine):
         loss = 0
         if not kd:  # 不进行知识蒸馏
             student_pred = self.model(imgs)
-            loss = self.compute_loss(self.criterion, outputs, pids)
+            loss = self.compute_loss(self.criterion, student_pred, pids)
         else:  # 进行知识蒸馏
             s_f = get_s_feas_by_hook(self.model)  # hook机制
             student_pred = self.model(imgs)  # forward
