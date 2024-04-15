@@ -21,11 +21,11 @@ if __name__ == '__main__':
         market1501_500k=False,
         combineall=True
     )
-    model = build_model(
+    student_model = build_model(
         name="osnet_x0_25",
         num_classes=datamanager.num_train_pids,
         loss="softmax",
-        pretrained=False
+        pretrained=True
     )
 
     teacher_model = build_model(
@@ -35,10 +35,10 @@ if __name__ == '__main__':
         pretrained=True
     )
 
-    model.to(device)
+    student_model.to(device)
     teacher_model.to(device)
     optimizer = torchreid.optim.build_optimizer(
-        model,
+        student_model,
         optim="sgd",
         lr=0.01,
         staged_lr=True,
@@ -52,16 +52,18 @@ if __name__ == '__main__':
     )
     engine = ImageSoftmaxEngine(
         datamanager,
-        model,
+        student_model,
         optimizer=optimizer,
         scheduler=scheduler,
         label_smooth=True
     )
     engine.run(
         save_dir="log/osnet",
-        max_epoch=2,
+        max_epoch=300,
         eval_freq=10,
         print_freq=10,
         fixbase_epoch=5,
-        open_layers='classifier'
+        open_layers='classifier',
+        teacher_model=teacher_model,
+        kd=True
     )
