@@ -132,8 +132,8 @@ class EFKD(nn.Module):
         super().__init__()
         # self.s_t_pair = [32, 64, 128, 256, 128, 64, 128, 256]
         # self.t_s_pair = [64, 128, 256, 512, 256, 128, 256, 512]
-        self.s_t_pair = [16, 16, 32]
-        self.t_s_pair = [640, 640, 1280]
+        self.s_t_pair = [16, 64, 96, 128, 128]
+        self.t_s_pair = [64, 256, 384, 512, 512]
         self.linears = nn.ModuleList([conv1x1_bn(s, t).to("cuda:0") for s, t in zip(self.s_t_pair, self.t_s_pair)])
         if isL:
             self.linears = nn.ModuleList([conv1x1_bn(s, 2 * s).to("cuda:0") for s in self.s_t_pair])
@@ -145,8 +145,8 @@ class EFKD(nn.Module):
         for i in range(len(t_f)):
             b, c, h, w = s_f[i].fea.size()
             cur_mask = torch.full((b, h, w), ratio, device=device)
-            for label in targets:
-                creat_mask(cur_mask, label, ratio)
+            # for label in targets:
+            #     creat_mask(cur_mask, label, ratio)
             atloss += wat_loss(t_f[i].fea, s_f[i].fea, cur_mask.view(b, -1))  # 计算AT Loss的第一项
             s_f[i].fea = self.linears[i](s_f[i].fea)  # 改变学生网络特征图尺度
             ftloss += ft_loss(t_f[i].fea, s_f[i].fea)  # 计算AT Loss的第二项
