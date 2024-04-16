@@ -188,4 +188,26 @@ resnet152					FLOPs: 58143808
 resnext101_32x8d				FLOPs: 86742336
 mudeep						FLOPs: 139036280
 
+Distillation
+=> Final test
+##### Evaluating market1501 (source) #####
+Extracting features from query set ...
+Done, obtained 3368-by-512 matrix
+Extracting features from gallery set ...
+Done, obtained 15913-by-512 matrix
+Speed: 0.0828 sec/batch
+Computing distance matrix with metric=euclidean ...
+Computing CMC and mAP ...
+** Results **
+mAP: 43.6%
+CMC curve
+Rank-1  : 65.6%
+Rank-5  : 84.7%
+Rank-10 : 89.8%
+Rank-20 : 94.1%
+Checkpoint saved to "log/osnet\model\model.pth.tar-50"
+Elapsed 1:51:17
+
+
+
 
