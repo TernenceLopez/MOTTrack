@@ -1,0 +1,11 @@
+# Train/val/test sets as
+# 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: D:/Elvis/YoloV8_Track/track  # dataset root dir
+train: D:/Elvis/YoloV8_Track/track/MOT17/train.txt  # train images (relative to 'path')  6471 images
+val: D:/Elvis/YoloV8_Track/track/MOT17/val.txt  # val images (relative to 'path')  548 images
+test: D:/Elvis/YoloV8_Track/track/MOT17/test.txt  # test images (optional)  1610 images
+
+nc: 1
+
+# Classes
+names: ['people']
