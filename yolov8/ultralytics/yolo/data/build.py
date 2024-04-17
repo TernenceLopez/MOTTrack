@@ -9,10 +9,10 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, dataloader, distributed
 
-from ultralytics.yolo.data.dataloaders.stream_loaders import (LOADERS, LoadImages, LoadPilAndNumpy, LoadScreenshots,
+from yolov8.ultralytics.yolo.data.dataloaders.stream_loaders import (LOADERS, LoadImages, LoadPilAndNumpy, LoadScreenshots,
                                                               LoadStreams, SourceTypes, autocast_list)
-from ultralytics.yolo.data.utils import IMG_FORMATS, VID_FORMATS
-from ultralytics.yolo.utils.checks import check_file
+from yolov8.ultralytics.yolo.data.utils import IMG_FORMATS, VID_FORMATS
+from yolov8.ultralytics.yolo.utils.checks import check_file
 
 from ..utils import LOGGER, colorstr
 from ..utils.torch_utils import torch_distributed_zero_first

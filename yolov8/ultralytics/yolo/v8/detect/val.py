@@ -6,14 +6,14 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from ultralytics.yolo.data import build_dataloader
-from ultralytics.yolo.data.dataloaders.v5loader import create_dataloader
-from ultralytics.yolo.engine.validator import BaseValidator
-from ultralytics.yolo.utils import DEFAULT_CFG, colorstr, ops
-from ultralytics.yolo.utils.checks import check_requirements
-from ultralytics.yolo.utils.metrics import ConfusionMatrix, DetMetrics, box_iou
-from ultralytics.yolo.utils.plotting import output_to_target, plot_images
-from ultralytics.yolo.utils.torch_utils import de_parallel
+from yolov8.ultralytics.yolo.data import build_dataloader
+from yolov8.ultralytics.yolo.data.dataloaders.v5loader import create_dataloader
+from yolov8.ultralytics.yolo.engine.validator import BaseValidator
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, colorstr, ops
+from yolov8.ultralytics.yolo.utils.checks import check_requirements
+from yolov8.ultralytics.yolo.utils.metrics import ConfusionMatrix, DetMetrics, box_iou
+from yolov8.ultralytics.yolo.utils.plotting import output_to_target, plot_images
+from yolov8.ultralytics.yolo.utils.torch_utils import de_parallel
 
 
 class DetectionValidator(BaseValidator):

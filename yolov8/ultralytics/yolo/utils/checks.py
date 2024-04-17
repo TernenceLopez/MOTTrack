@@ -19,7 +19,7 @@ import psutil
 import torch
 from matplotlib import font_manager
 
-from ultralytics.yolo.utils import (AUTOINSTALL, LOGGER, ROOT, USER_CONFIG_DIR, TryExcept, colorstr, downloads, emojis,
+from yolov8.ultralytics.yolo.utils import (AUTOINSTALL, LOGGER, ROOT, USER_CONFIG_DIR, TryExcept, colorstr, downloads, emojis,
                                     is_colab, is_docker, is_jupyter)
 
 

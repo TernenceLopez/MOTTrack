@@ -7,14 +7,14 @@ from pathlib import Path
 import torch
 from tqdm import tqdm
 
-from ultralytics.nn.autobackend import AutoBackend
-from ultralytics.yolo.cfg import get_cfg
-from ultralytics.yolo.data.utils import check_cls_dataset, check_det_dataset
-from ultralytics.yolo.utils import DEFAULT_CFG, LOGGER, RANK, SETTINGS, TQDM_BAR_FORMAT, callbacks, emojis
-from ultralytics.yolo.utils.checks import check_imgsz
-from ultralytics.yolo.utils.files import increment_path
-from ultralytics.yolo.utils.ops import Profile
-from ultralytics.yolo.utils.torch_utils import de_parallel, select_device, smart_inference_mode
+from yolov8.ultralytics.nn.autobackend import AutoBackend
+from yolov8.ultralytics.yolo.cfg import get_cfg
+from yolov8.ultralytics.yolo.data.utils import check_cls_dataset, check_det_dataset
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, LOGGER, RANK, SETTINGS, TQDM_BAR_FORMAT, callbacks, emojis
+from yolov8.ultralytics.yolo.utils.checks import check_imgsz
+from yolov8.ultralytics.yolo.utils.files import increment_path
+from yolov8.ultralytics.yolo.utils.ops import Profile
+from yolov8.ultralytics.yolo.utils.torch_utils import de_parallel, select_device, smart_inference_mode
 
 
 class BaseValidator:

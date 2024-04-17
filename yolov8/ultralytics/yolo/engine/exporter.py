@@ -63,17 +63,17 @@ import numpy as np
 import pandas as pd
 import torch
 
-from ultralytics.nn.autobackend import check_class_names
-from ultralytics.nn.modules import Detect, Segment
-from ultralytics.nn.tasks import DetectionModel, SegmentationModel
-from ultralytics.yolo.cfg import get_cfg
-from ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages
-from ultralytics.yolo.data.utils import IMAGENET_MEAN, IMAGENET_STD, check_det_dataset
-from ultralytics.yolo.utils import DEFAULT_CFG, LOGGER, __version__, callbacks, colorstr, get_default_args, yaml_save
-from ultralytics.yolo.utils.checks import check_imgsz, check_requirements, check_version, check_yaml
-from ultralytics.yolo.utils.files import file_size
-from ultralytics.yolo.utils.ops import Profile
-from ultralytics.yolo.utils.torch_utils import get_latest_opset, select_device, smart_inference_mode
+from yolov8.ultralytics.nn.autobackend import check_class_names
+from yolov8.ultralytics.nn.modules import Detect, Segment
+from yolov8.ultralytics.nn.tasks import DetectionModel, SegmentationModel
+from yolov8.ultralytics.yolo.cfg import get_cfg
+from yolov8.ultralytics.yolo.data.dataloaders.stream_loaders import LoadImages
+from yolov8.ultralytics.yolo.data.utils import IMAGENET_MEAN, IMAGENET_STD, check_det_dataset
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, LOGGER, __version__, callbacks, colorstr, get_default_args, yaml_save
+from yolov8.ultralytics.yolo.utils.checks import check_imgsz, check_requirements, check_version, check_yaml
+from yolov8.ultralytics.yolo.utils.files import file_size
+from yolov8.ultralytics.yolo.utils.ops import Profile
+from yolov8.ultralytics.yolo.utils.torch_utils import get_latest_opset, select_device, smart_inference_mode
 
 MACOS = platform.system() == 'Darwin'  # macOS environment
 

@@ -22,7 +22,7 @@ import requests
 import torch
 import yaml
 
-from ultralytics import __version__
+from yolov8.ultralytics import __version__
 
 # Constants
 FILE = Path(__file__).resolve()
@@ -569,8 +569,8 @@ def get_settings(file=USER_CONFIG_DIR / 'settings.yaml', version='0.0.2'):
     """
     import hashlib
 
-    from ultralytics.yolo.utils.checks import check_version
-    from ultralytics.yolo.utils.torch_utils import torch_distributed_zero_first
+    from yolov8.ultralytics.yolo.utils.checks import check_version
+    from yolov8.ultralytics.yolo.utils.torch_utils import torch_distributed_zero_first
 
     git_dir = get_git_dir()
     root = git_dir or Path()

@@ -8,11 +8,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ultralytics.yolo.utils import DEFAULT_CFG, NUM_THREADS, ops
-from ultralytics.yolo.utils.checks import check_requirements
-from ultralytics.yolo.utils.metrics import ConfusionMatrix, SegmentMetrics, box_iou, mask_iou
-from ultralytics.yolo.utils.plotting import output_to_target, plot_images
-from ultralytics.yolo.v8.detect import DetectionValidator
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, NUM_THREADS, ops
+from yolov8.ultralytics.yolo.utils.checks import check_requirements
+from yolov8.ultralytics.yolo.utils.metrics import ConfusionMatrix, SegmentMetrics, box_iou, mask_iou
+from yolov8.ultralytics.yolo.utils.plotting import output_to_target, plot_images
+from yolov8.ultralytics.yolo.v8.detect import DetectionValidator
 
 
 class SegmentationValidator(DetectionValidator):

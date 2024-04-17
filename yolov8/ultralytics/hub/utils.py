@@ -11,10 +11,10 @@ from random import random
 
 import requests
 
-from ultralytics.yolo.utils import (DEFAULT_CFG_DICT, ENVIRONMENT, LOGGER, RANK, SETTINGS, TryExcept, __version__,
+from yolov8.ultralytics.yolo.utils import (DEFAULT_CFG_DICT, ENVIRONMENT, LOGGER, RANK, SETTINGS, TryExcept, __version__,
                                     colorstr, emojis, get_git_origin_url, is_colab, is_git_dir, is_github_actions_ci,
                                     is_pip_package, is_pytest_running)
-from ultralytics.yolo.utils.checks import check_online
+from yolov8.ultralytics.yolo.utils.checks import check_online
 
 PREFIX = colorstr('Ultralytics: ')
 HELP_MSG = 'If this issue persists please visit https://github.com/ultralytics/hub/issues for assistance.'

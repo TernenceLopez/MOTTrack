@@ -3,12 +3,12 @@
 import torch
 import torchvision
 
-from ultralytics.nn.tasks import ClassificationModel, attempt_load_one_weight
-from ultralytics.yolo import v8
-from ultralytics.yolo.data import build_classification_dataloader
-from ultralytics.yolo.engine.trainer import BaseTrainer
-from ultralytics.yolo.utils import DEFAULT_CFG, RANK
-from ultralytics.yolo.utils.torch_utils import is_parallel, strip_optimizer
+from yolov8.ultralytics.nn.tasks import ClassificationModel, attempt_load_one_weight
+from yolov8.ultralytics.yolo import v8
+from yolov8.ultralytics.yolo.data import build_classification_dataloader
+from yolov8.ultralytics.yolo.engine.trainer import BaseTrainer
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, RANK
+from yolov8.ultralytics.yolo.utils.torch_utils import is_parallel, strip_optimizer
 
 
 class ClassificationTrainer(BaseTrainer):

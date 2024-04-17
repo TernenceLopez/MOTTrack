@@ -3,10 +3,10 @@
 import torch
 import serial.tools.list_ports
 
-from ultralytics.yolo.engine.predictor import BasePredictor
-from ultralytics.yolo.engine.results import Results
-from ultralytics.yolo.utils import DEFAULT_CFG, ROOT, ops
-from ultralytics.yolo.utils.plotting import Annotator, colors, save_one_box
+from yolov8.ultralytics.yolo.engine.predictor import BasePredictor
+from yolov8.ultralytics.yolo.engine.results import Results
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, ROOT, ops
+from yolov8.ultralytics.yolo.utils.plotting import Annotator, colors, save_one_box
 
 
 class DetectionPredictor(BasePredictor):  # 继承BasePredictor类

@@ -8,7 +8,7 @@ import math
 import torch
 import torch.nn as nn
 
-from ultralytics.yolo.utils.tal import dist2bbox, make_anchors
+from yolov8.ultralytics.yolo.utils.tal import dist2bbox, make_anchors
 
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation

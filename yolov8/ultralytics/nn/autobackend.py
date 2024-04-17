@@ -14,10 +14,10 @@ import torch
 import torch.nn as nn
 from PIL import Image
 
-from ultralytics.yolo.utils import LOGGER, ROOT, yaml_load
-from ultralytics.yolo.utils.checks import check_requirements, check_suffix, check_version, check_yaml
-from ultralytics.yolo.utils.downloads import attempt_download_asset, is_url
-from ultralytics.yolo.utils.ops import xywh2xyxy
+from yolov8.ultralytics.yolo.utils import LOGGER, ROOT, yaml_load
+from yolov8.ultralytics.yolo.utils.checks import check_requirements, check_suffix, check_version, check_yaml
+from yolov8.ultralytics.yolo.utils.downloads import attempt_download_asset, is_url
+from yolov8.ultralytics.yolo.utils.ops import xywh2xyxy
 
 
 def check_class_names(names):

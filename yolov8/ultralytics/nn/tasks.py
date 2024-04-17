@@ -9,12 +9,12 @@ import thop
 import torch
 import torch.nn as nn
 
-from ultralytics.nn.modules import (C1, C2, C3, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x, Classify,
+from yolov8.ultralytics.nn.modules import (C1, C2, C3, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x, Classify,
                                     Concat, Conv, ConvTranspose, Detect, DWConv, DWConvTranspose2d, Ensemble, Focus,
                                     GhostBottleneck, GhostConv, Segment)
-from ultralytics.yolo.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, RANK, colorstr, yaml_load
-from ultralytics.yolo.utils.checks import check_requirements, check_yaml
-from ultralytics.yolo.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn, initialize_weights,
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, RANK, colorstr, yaml_load
+from yolov8.ultralytics.yolo.utils.checks import check_requirements, check_yaml
+from yolov8.ultralytics.yolo.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn, initialize_weights,
                                                 intersect_dicts, make_divisible, model_info, scale_img, time_sync)
 
 
@@ -331,7 +331,7 @@ def torch_safe_load(weight):
     Returns:
         The loaded PyTorch model.
     """
-    from ultralytics.yolo.utils.downloads import attempt_download_asset
+    from yolov8.ultralytics.yolo.utils.downloads import attempt_download_asset
 
     file = attempt_download_asset(weight)  # search online if missing locally
     try:

@@ -20,16 +20,16 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import lr_scheduler
 from tqdm import tqdm
 
-from ultralytics.nn.tasks import attempt_load_one_weight, attempt_load_weights
-from ultralytics.yolo.cfg import get_cfg
-from ultralytics.yolo.data.utils import check_cls_dataset, check_det_dataset
-from ultralytics.yolo.utils import (DEFAULT_CFG, LOGGER, RANK, SETTINGS, TQDM_BAR_FORMAT, __version__, callbacks,
+from yolov8.ultralytics.nn.tasks import attempt_load_one_weight, attempt_load_weights
+from yolov8.ultralytics.yolo.cfg import get_cfg
+from yolov8.ultralytics.yolo.data.utils import check_cls_dataset, check_det_dataset
+from yolov8.ultralytics.yolo.utils import (DEFAULT_CFG, LOGGER, RANK, SETTINGS, TQDM_BAR_FORMAT, __version__, callbacks,
                                     colorstr, emojis, yaml_save)
-from ultralytics.yolo.utils.autobatch import check_train_batch_size
-from ultralytics.yolo.utils.checks import check_file, check_imgsz, print_args
-from ultralytics.yolo.utils.dist import ddp_cleanup, generate_ddp_command
-from ultralytics.yolo.utils.files import get_latest_run, increment_path
-from ultralytics.yolo.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, init_seeds, one_cycle,
+from yolov8.ultralytics.yolo.utils.autobatch import check_train_batch_size
+from yolov8.ultralytics.yolo.utils.checks import check_file, check_imgsz, print_args
+from yolov8.ultralytics.yolo.utils.dist import ddp_cleanup, generate_ddp_command
+from yolov8.ultralytics.yolo.utils.files import get_latest_run, increment_path
+from yolov8.ultralytics.yolo.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, init_seeds, one_cycle,
                                                 select_device, strip_optimizer)
 
 

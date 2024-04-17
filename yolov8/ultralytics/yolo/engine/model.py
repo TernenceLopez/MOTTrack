@@ -4,15 +4,15 @@ import sys
 from pathlib import Path
 from typing import List
 
-from ultralytics import yolo  # noqa
-from ultralytics.nn.tasks import (ClassificationModel, DetectionModel, SegmentationModel, attempt_load_one_weight,
+from yolov8.ultralytics import yolo  # noqa
+from yolov8.ultralytics.nn.tasks import (ClassificationModel, DetectionModel, SegmentationModel, attempt_load_one_weight,
                                   guess_model_task, nn)
-from ultralytics.yolo.cfg import get_cfg
-from ultralytics.yolo.engine.exporter import Exporter
-from ultralytics.yolo.utils import DEFAULT_CFG, LOGGER, RANK, callbacks, yaml_load
-from ultralytics.yolo.utils.checks import check_file, check_imgsz, check_yaml
-from ultralytics.yolo.utils.downloads import GITHUB_ASSET_STEMS
-from ultralytics.yolo.utils.torch_utils import smart_inference_mode
+from yolov8.ultralytics.yolo.cfg import get_cfg
+from yolov8.ultralytics.yolo.engine.exporter import Exporter
+from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, LOGGER, RANK, callbacks, yaml_load
+from yolov8.ultralytics.yolo.utils.checks import check_file, check_imgsz, check_yaml
+from yolov8.ultralytics.yolo.utils.downloads import GITHUB_ASSET_STEMS
+from yolov8.ultralytics.yolo.utils.torch_utils import smart_inference_mode
 
 # Map head to model, trainer, validator, and predictor classes
 MODEL_MAP = {
