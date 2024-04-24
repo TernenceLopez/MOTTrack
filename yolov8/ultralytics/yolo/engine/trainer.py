@@ -32,6 +32,10 @@ from yolov8.ultralytics.yolo.utils.files import get_latest_run, increment_path
 from yolov8.ultralytics.yolo.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, init_seeds, one_cycle,
                                                 select_device, strip_optimizer)
 
+from yolov8.ultralytics.yolo_distillationUtils.register_hooks import *
+from yolov8.ultralytics.yolo_distillationUtils.yolo_kd_loss import *
+from ReIDNet.distillation_utils.constant_param import *
+
 
 class BaseTrainer:
     """
@@ -85,6 +89,7 @@ class BaseTrainer:
         self.console = LOGGER
         self.validator = None
         self.model = None
+        self.teacher_model = None
         self.metrics = None
         init_seeds(self.args.seed + 1 + RANK, deterministic=self.args.deterministic)
 
@@ -301,8 +306,16 @@ class BaseTrainer:
 
                 # Forward
                 with torch.cuda.amp.autocast(self.amp):
+                    s_f = get_s_feas_by_hook(self.model)  # hook机制
+
                     batch = self.preprocess_batch(batch)
                     preds = self.model(batch["img"])
+
+                    # if opt.yolo_kd_switch:
+                    #     with torch.no_grad():
+                    #         t_f = get_t_feas_by_hook(teacher_model)
+                    #         teacher_pred = teacher_model(batch["img"])
+
                     self.loss, self.loss_items = self.criterion(preds, batch)
                     if rank != -1:
                         self.loss *= world_size
@@ -419,6 +432,18 @@ class BaseTrainer:
         else:
             cfg = model
         self.model = self.get_model(cfg=cfg, weights=weights, verbose=RANK == -1)  # calls Model(cfg, weights)
+
+        # knowledge distillation
+        if opt.yolo_kd_switch:
+            print("load teacher-model from", opt.teacher_model)
+            # load teacher_model
+            teacher_model = torch.load(opt.teacher_model)
+            if self.teacher_model.get("model", None) is not None:
+                self.teacher_model = teacher_model["model"]  # 获取model参数
+            self.teacher_model.to(self.device)
+            self.teacher_model.float()
+            self.teacher_model.train()
+
         return ckpt
 
     def optimizer_step(self):
