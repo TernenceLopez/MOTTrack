@@ -34,7 +34,7 @@ from yolov8.ultralytics.yolo.utils.torch_utils import (EarlyStopping, ModelEMA, 
 
 from yolov8.ultralytics.yolo_distillationUtils.register_hooks import *
 from yolov8.ultralytics.yolo_distillationUtils.yolo_kd_loss import *
-from ReIDNet.distillation_utils.constant_param import *
+from yolov8.ultralytics.yolo_distillationUtils.constant_param import *
 
 
 class BaseTrainer:
