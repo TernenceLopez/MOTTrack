@@ -238,6 +238,9 @@ class BaseTrainer:
         self.scheduler = lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lf)
         self.stopper, self.stop = EarlyStopping(patience=self.args.patience), False
 
+        # KD Attention Loss
+        self.eat_loss = EFKD(opt.yolo_isL)
+
         # dataloaders
         batch_size = self.batch_size // world_size if world_size > 1 else self.batch_size
         self.train_loader = self.get_dataloader(self.trainset, batch_size=batch_size, rank=rank, mode="train")
@@ -317,10 +320,18 @@ class BaseTrainer:
                     batch = self.preprocess_batch(batch)
                     preds = self.model(batch["img"])
 
-                    # if opt.yolo_kd_switch:
-                    #     with torch.no_grad():
-                    #         t_f = get_t_feas_by_hook(teacher_model)
-                    #         teacher_pred = teacher_model(batch["img"])
+                    # 计算 Attention Transform 损失
+                    if opt.yolo_kd_switch:
+                        with torch.no_grad():
+                            t_f = get_t_feas_by_hook(self.teacher_model)
+                            teacher_pred = self.teacher_model(batch["img"])
+                        # 获取target
+                        targets = torch.cat((batch["batch_idx"].view(-1, 1),
+                                             batch["cls"].view(-1, 1),
+                                             batch["bboxes"]), 1)
+                        ftloss, ftloss_items = self.eat_loss(targets.to(self.device), t_f, s_f, opt.yolo_ratio)
+                        del t_f
+                    del s_f
 
                     # 计算 Soft Target 损失
                     soft_target_loss = 0

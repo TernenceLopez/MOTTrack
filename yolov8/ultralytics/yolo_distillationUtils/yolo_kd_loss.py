@@ -127,10 +127,8 @@ class EFTLoss(nn.Module):
 class EFKD(nn.Module):
     def __init__(self, isL=False):
         super().__init__()
-        # self.s_t_pair = [32, 64, 128, 256, 128, 64, 128, 256]
-        # self.t_s_pair = [64, 128, 256, 512, 256, 128, 256, 512]
-        self.s_t_pair = [16, 16, 32]
-        self.t_s_pair = [640, 640, 1280]
+        self.s_t_pair = [16, 8, 16, 24]
+        self.t_s_pair = [640, 320, 640, 640]
         self.linears = nn.ModuleList([conv1x1_bn(s, t).to("cuda:0") for s, t in zip(self.s_t_pair, self.t_s_pair)])
         if isL:
             self.linears = nn.ModuleList([conv1x1_bn(s, 2 * s).to("cuda:0") for s in self.s_t_pair])
