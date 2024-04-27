@@ -334,7 +334,6 @@ class BaseTrainer:
                     del s_f
 
                     # 计算 Soft Target 损失
-                    soft_target_loss = 0
                     if opt.yolo_kd_switch:
                         distill_weight = ((1 - math.cos(i * math.pi / len(self.train_loader))) / 2) * (0.1 - 1) + 1
                         soft_target_loss, soft_target_loss_items = self.soft_criterion(preds, teacher_pred, batch)
