@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from yolov8.ultralytics.yolo.utils.loss import BboxLoss
+from yolov8.ultralytics.yolo.utils.ops import xywh2xyxy
+from yolov8.ultralytics.yolo.utils.tal import TaskAlignedAssigner, dist2bbox, make_anchors
 
 
 def compute_kd_output_loss(pred, teacher_pred, model, kd_loss_selected="l2", temperature=20, reg_norm=None):
@@ -247,3 +250,110 @@ class MGDLoss(nn.Module):
         return dis_loss
 
 
+class SoftLoss:
+
+    def __init__(self, model):  # model must be de-paralleled
+
+        device = next(model.parameters()).device  # get model device
+        h = model.args  # hyperparameters
+
+        m = model.model[-1]  # Detect() module
+        self.bce = nn.BCEWithLogitsLoss(reduction='none')
+        self.hyp = h
+        self.stride = m.stride  # model strides
+        self.nc = m.nc  # number of classes
+        self.no = m.no
+        self.reg_max = m.reg_max
+        self.device = device
+        self.softmax = nn.Softmax(dim=1)
+
+        self.use_dfl = m.reg_max > 1
+        roll_out_thr = h.min_memory if h.min_memory > 1 else 64 if h.min_memory else 0  # 64 is default
+
+        self.assigner = TaskAlignedAssigner(topk=10,
+                                            num_classes=self.nc,
+                                            alpha=0.5,
+                                            beta=6.0,
+                                            roll_out_thr=roll_out_thr)
+        self.bbox_loss = BboxLoss(m.reg_max - 1, use_dfl=self.use_dfl).to(device)
+        self.proj = torch.arange(m.reg_max, dtype=torch.float, device=device)
+
+    def preprocess(self, targets, batch_size, scale_tensor):
+        if targets.shape[0] == 0:
+            out = torch.zeros(batch_size, 0, 5, device=self.device)
+        else:
+            i = targets[:, 0]  # image index
+            _, counts = i.unique(return_counts=True)
+            out = torch.zeros(batch_size, counts.max(), 5, device=self.device)
+            for j in range(batch_size):
+                matches = i == j
+                n = matches.sum()
+                if n:
+                    out[j, :n] = targets[matches, 1:]
+            out[..., 1:5] = xywh2xyxy(out[..., 1:5].mul_(scale_tensor))
+        return out
+
+    def bbox_decode(self, anchor_points, pred_dist):
+        if self.use_dfl:
+            b, a, c = pred_dist.shape  # batch, anchors, channels
+            pred_dist = pred_dist.view(b, a, 4, c // 4).softmax(3).matmul(self.proj.type(pred_dist.dtype))
+            # pred_dist = pred_dist.view(b, a, c // 4, 4).transpose(2,3).softmax(3).matmul(self.proj.type(pred_dist.dtype))
+            # pred_dist = (pred_dist.view(b, a, c // 4, 4).softmax(2) * self.proj.type(pred_dist.dtype).view(1, 1, -1, 1)).sum(2)
+        return dist2bbox(pred_dist, anchor_points, xywh=False)
+
+    def __call__(self, preds, teacher_preds, batch):
+        loss = torch.zeros(3, device=self.device)  # box, cls, dfl
+        # student preds
+        feats = preds[1] if isinstance(preds, tuple) else preds
+        pred_distri, pred_scores = torch.cat([xi.view(feats[0].shape[0], self.no, -1) for xi in feats], 2) \
+            .split((self.reg_max * 4, self.nc), 1)
+
+        pred_scores = pred_scores.permute(0, 2, 1).contiguous()
+        pred_distri = pred_distri.permute(0, 2, 1).contiguous()
+
+        # teacher preds
+        t_feats = teacher_preds[1] if isinstance(teacher_preds, tuple) else teacher_preds
+        t_pred_distri, t_pred_scores = torch.cat([xi.view(t_feats[0].shape[0], self.no, -1) for xi in t_feats], 2) \
+            .split((self.reg_max * 4, self.nc), 1)
+
+        t_pred_scores = t_pred_scores.permute(0, 2, 1).contiguous()
+        t_pred_distri = t_pred_distri.permute(0, 2, 1).contiguous()
+
+        dtype = pred_scores.dtype
+        batch_size = pred_scores.shape[0]
+        imgsz = torch.tensor(feats[0].shape[2:], device=self.device, dtype=dtype) * self.stride[0]  # image size (h,w)
+        anchor_points, stride_tensor = make_anchors(feats, self.stride, 0.5)
+
+        # targets
+        targets = torch.cat((batch["batch_idx"].view(-1, 1), batch["cls"].view(-1, 1), batch["bboxes"]), 1)
+        targets = self.preprocess(targets.to(self.device), batch_size, scale_tensor=imgsz[[1, 0, 1, 0]])
+        gt_labels, gt_bboxes = targets.split((1, 4), 2)  # cls, xyxy
+        mask_gt = gt_bboxes.sum(2, keepdim=True).gt_(0)
+
+        # pboxes
+        pred_bboxes = self.bbox_decode(anchor_points, pred_distri)  # xyxy, (b, h*w, 4)
+        t_pred_bboxes = self.bbox_decode(anchor_points, t_pred_distri)
+
+        _, target_bboxes, target_scores, fg_mask, _ = self.assigner(
+            pred_scores.detach().sigmoid(), (pred_bboxes.detach() * stride_tensor).type(gt_bboxes.dtype),
+            anchor_points * stride_tensor, gt_labels, gt_bboxes, mask_gt)
+
+        t_pred_bboxes /= stride_tensor
+        t_pred_scores = self.softmax(t_pred_scores)  # 教师网络预测结果需要经过一次softmax
+        t_scores_sum = max(t_pred_scores.sum(), 1)
+
+        # cls loss
+        loss[1] = self.bce(pred_scores, t_pred_scores.to(dtype)).sum() / t_scores_sum  # BCE
+
+        # bbox loss
+        # 教师网络预测的每一个锚框都需要计算损失
+        fg_mask = torch.ones(batch_size, pred_distri.shape[1], dtype=torch.bool).cuda()
+        if fg_mask.sum():
+            loss[0], loss[2] = self.bbox_loss(pred_distri, pred_bboxes, anchor_points, t_pred_bboxes, t_pred_scores,
+                                              t_scores_sum, fg_mask)
+
+        loss[0] *= self.hyp.box  # box gain
+        loss[1] *= self.hyp.cls  # cls gain
+        loss[2] *= self.hyp.dfl  # dfl gain
+
+        return loss.sum() * batch_size, loss.detach()  # loss(box, cls, dfl)

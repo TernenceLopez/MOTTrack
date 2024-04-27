@@ -337,9 +337,15 @@ class BaseTrainer:
                     soft_target_loss = 0
                     if opt.yolo_kd_switch:
                         distill_weight = ((1 - math.cos(i * math.pi / len(self.train_loader))) / 2) * (0.1 - 1) + 1
+                        soft_target_loss, soft_target_loss_items = self.soft_criterion(preds, teacher_pred, batch)
+                        # soft_target_loss = compute_kd_output_loss(preds,
+                        #                                           teacher_pred,
+                        #                                           self.model,
+                        #                                           opt.yolo_kd_loss_selected,
+                        #                                           opt.yolo_temperature)
                         # TODO : 实现优化MGD Loss和 CWD Loss
                         # refer：https://github.com/huangzongmou/yolov8_Distillation.git
-                        soft_target_loss = distill_weight * MGDLossComputer(preds, teacher_pred)
+                        # soft_target_loss = distill_weight * MGDLossComputer(preds, teacher_pred)
 
                     # 计算 Hard Target 损失
                     self.loss, self.loss_items = self.criterion(preds, batch)
@@ -416,6 +422,11 @@ class BaseTrainer:
             self.run_callbacks('on_train_end')
         torch.cuda.empty_cache()
         self.run_callbacks('teardown')
+
+    def soft_criterion(self, preds, teacher_preds, batch):
+        if not hasattr(self, 'compute_soft_loss'):
+            self.compute_soft_loss = SoftLoss(de_parallel(self.model))
+        return self.compute_soft_loss(preds, teacher_preds, batch)
 
     def save_model(self):
         ckpt = {
