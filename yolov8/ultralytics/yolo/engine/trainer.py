@@ -6,6 +6,7 @@ Simple training loop; Boilerplate that could apply to any arbitrary neural netwo
 import os
 import subprocess
 import time
+import math
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
@@ -270,6 +271,11 @@ class BaseTrainer:
         if self.args.close_mosaic:
             base_idx = (self.epochs - self.args.close_mosaic) * nb
             self.plot_idx.extend([base_idx, base_idx + 1, base_idx + 2])
+
+        channels_s = [65, 65, 65]
+        channels_t = [65, 65, 65]
+        MGDLossComputer = MGDLoss(channels_s, channels_t)
+
         for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             self.run_callbacks("on_train_epoch_start")
@@ -316,6 +322,15 @@ class BaseTrainer:
                     #         t_f = get_t_feas_by_hook(teacher_model)
                     #         teacher_pred = teacher_model(batch["img"])
 
+                    # 计算 Soft Target 损失
+                    soft_target_loss = 0
+                    if opt.yolo_kd_switch:
+                        distill_weight = ((1 - math.cos(i * math.pi / len(self.train_loader))) / 2) * (0.1 - 1) + 1
+                        # TODO : 实现优化MGD Loss和 CWD Loss
+                        # refer：https://github.com/huangzongmou/yolov8_Distillation.git
+                        soft_target_loss = distill_weight * MGDLossComputer(preds, teacher_pred)
+
+                    # 计算 Hard Target 损失
                     self.loss, self.loss_items = self.criterion(preds, batch)
                     if rank != -1:
                         self.loss *= world_size
