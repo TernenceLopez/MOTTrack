@@ -395,7 +395,8 @@ class BaseTrainer:
         ckpt = {
             'epoch': self.epoch,
             'best_fitness': self.best_fitness,
-            'model': deepcopy(de_parallel(self.model)).half(),
+            # 'model': deepcopy(de_parallel(self.model)).half(),
+            'model': self.model.state_dict(),
             'ema': deepcopy(self.ema.ema).half(),
             'updates': self.ema.updates,
             'optimizer': self.optimizer.state_dict(),
@@ -437,12 +438,12 @@ class BaseTrainer:
         if opt.yolo_kd_switch:
             print("load teacher-model from", opt.teacher_model)
             # load teacher_model
-            teacher_model = torch.load(opt.teacher_model)
-            if self.teacher_model.get("model", None) is not None:
-                self.teacher_model = teacher_model["model"]  # 获取model参数
+            teacher_weights, teacher_ckpt = attempt_load_one_weight(opt.teacher_model)
+            teacher_cfg = teacher_ckpt["model"].yaml
+            self.teacher_model = self.get_model(cfg=teacher_cfg, weights=teacher_weights, verbose=RANK == -1)
             self.teacher_model.to(self.device)
             self.teacher_model.float()
-            self.teacher_model.train()
+            # self.teacher_model.train(False)  # 使用 with torch.no_grad() 不计算教师网络的梯度，否则会出错
 
         return ckpt
 
