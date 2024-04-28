@@ -230,6 +230,31 @@ class BaseTrainer:
                                               lr=self.args.lr0,
                                               momentum=self.args.momentum,
                                               decay=weight_decay)
+
+        # Adaptive Params
+        self.theta = torch.ones(1, device=self.device)  # 各个损失的自适应权重参数
+        self.beta = torch.ones(1, device=self.device)
+        self.gamma = torch.ones(1, device=self.device)
+        if opt.yolo_AdaptiveParams:
+            if 'theta' in ckpt.keys():
+                self.theta.data = ckpt['theta'].data
+                self.theta = self.theta.to(self.device)
+            if 'beta' in ckpt.keys():
+                self.beta.data = ckpt['beta'].data
+                self.beta = self.beta.to(self.device)
+            if 'gamma' in ckpt.keys():
+                self.gamma.data = ckpt['gamma'].data
+                self.gamma = self.gamma.to(self.device)
+        self.theta.requires_grad = True
+        self.beta.requires_grad = True
+        self.gamma.requires_grad = True
+        self.optimizer.add_param_group({'params': self.beta})
+        self.optimizer.add_param_group({'params': self.theta})
+        self.optimizer.add_param_group({'params': self.gamma})
+        self.theta_sigmoid = nn.Sigmoid()
+        self.beta_sigmoid = nn.Sigmoid()
+        self.gamma_sigmoid = nn.Sigmoid()
+
         # Scheduler
         if self.args.cos_lr:
             self.lf = one_cycle(1, self.args.lrf, self.epochs)  # cosine 1->hyp['lrf']
@@ -352,7 +377,10 @@ class BaseTrainer:
 
                     # 计算最终损失
                     if opt.yolo_kd_switch:
-                        self.loss += ftloss + distill_weight * soft_target_loss
+                        self.loss = opt.yolo_hard_loss_weight * self.theta_sigmoid(self.theta) * self.loss + \
+                                    opt.yolo_attention_loss_weight * self.beta_sigmoid(self.beta) * ftloss + \
+                                    opt.yolo_soft_loss_weight * self.gamma_sigmoid(self.gamma) * soft_target_loss
+                        # self.loss += ftloss + distill_weight * soft_target_loss
                     if rank != -1:
                         self.loss *= world_size
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
@@ -443,6 +471,9 @@ class BaseTrainer:
             'optimizer': self.optimizer.state_dict(),
             'train_args': vars(self.args),  # save as dict
             'date': datetime.now().isoformat(),
+            'beta': self.beta,
+            'gamma': self.gamma,
+            'theta': self.theta,
             'version': __version__}
 
         # Save last, best and delete
