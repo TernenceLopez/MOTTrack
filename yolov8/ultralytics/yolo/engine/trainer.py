@@ -33,6 +33,7 @@ from yolov8.ultralytics.yolo.utils.files import get_latest_run, increment_path
 from yolov8.ultralytics.yolo.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, init_seeds, one_cycle,
                                                 select_device, strip_optimizer)
 
+from yolov8.ultralytics.yolo.utils.xlsx_record import *
 from yolov8.ultralytics.yolo_distillationUtils.register_hooks import *
 from yolov8.ultralytics.yolo_distillationUtils.yolo_kd_loss import *
 from yolov8.ultralytics.yolo_distillationUtils.constant_param import *
@@ -148,6 +149,7 @@ class BaseTrainer:
         self.tloss = None
         self.loss_names = ['Loss']
         self.csv = self.save_dir / 'results.csv'
+        self.xlsx_logger_dir = self.save_dir / opt.xlsx_file_name
         self.plot_idx = [0, 1, 2]
 
         # Callbacks
@@ -254,6 +256,9 @@ class BaseTrainer:
         self.theta_sigmoid = nn.Sigmoid()
         self.beta_sigmoid = nn.Sigmoid()
         self.gamma_sigmoid = nn.Sigmoid()
+
+        # Logger
+        self.xlsx_book, self.xlsx_sheet = create_loss_xlsx()
 
         # Scheduler
         if self.args.cos_lr:
@@ -385,6 +390,17 @@ class BaseTrainer:
                         self.loss *= world_size
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
                         else self.loss_items
+
+                # xlsx Log
+                append_date(self.loss.item(),
+                            soft_target_loss.item(),
+                            ftloss.item(),
+                            self.theta.item(),
+                            self.beta.item(),
+                            self.gamma.item(),
+                            self.xlsx_book,
+                            self.xlsx_sheet,
+                            self.xlsx_logger_dir)
 
                 # Backward
                 self.scaler.scale(self.loss).backward()
