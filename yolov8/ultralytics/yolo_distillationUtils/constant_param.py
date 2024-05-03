@@ -11,5 +11,7 @@ class opt:
     yolo_hard_loss_weight = 2
     yolo_soft_loss_weight = 1
     yolo_attention_loss_weight = 1.5
+    yolo_mgd_loss_weight = 1
+    yolo_cwd_loss_weight = 1
     # 知识蒸馏损失记录
     xlsx_file_name = "./loss_record.xlsx"
