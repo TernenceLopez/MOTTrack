@@ -237,6 +237,8 @@ class BaseTrainer:
         self.theta = torch.ones(1, device=self.device)  # 各个损失的自适应权重参数
         self.beta = torch.ones(1, device=self.device)
         self.gamma = torch.ones(1, device=self.device)
+        self.sigma = torch.ones(1, device=self.device)
+        self.delta = torch.ones(1, device=self.device)
         if opt.yolo_AdaptiveParams:
             if 'theta' in ckpt.keys():
                 self.theta.data = ckpt['theta'].data
@@ -247,15 +249,27 @@ class BaseTrainer:
             if 'gamma' in ckpt.keys():
                 self.gamma.data = ckpt['gamma'].data
                 self.gamma = self.gamma.to(self.device)
-        self.theta.requires_grad = True
+            if 'sigma' in ckpt.keys():
+                self.sigma.data = ckpt['sigma'].data
+                self.sigma = self.sigma.to(self.device)
+            if 'delta' in ckpt.keys():
+                self.delta.data = ckpt['delta'].data
+                self.delta = self.delta.to(self.device)
         self.beta.requires_grad = True
+        self.theta.requires_grad = True
         self.gamma.requires_grad = True
+        self.sigma.requires_grad = True
+        self.delta.requires_grad = True
         self.optimizer.add_param_group({'params': self.beta})
         self.optimizer.add_param_group({'params': self.theta})
         self.optimizer.add_param_group({'params': self.gamma})
-        self.theta_sigmoid = nn.Sigmoid()
+        self.optimizer.add_param_group({'params': self.sigma})
+        self.optimizer.add_param_group({'params': self.delta})
         self.beta_sigmoid = nn.Sigmoid()
+        self.theta_sigmoid = nn.Sigmoid()
         self.gamma_sigmoid = nn.Sigmoid()
+        self.sigma_sigmoid = nn.Sigmoid()
+        self.delta_sigmoid = nn.Sigmoid()
 
         # Logger
         self.xlsx_book, self.xlsx_sheet = create_loss_xlsx()
@@ -374,7 +388,8 @@ class BaseTrainer:
                         #                                           opt.yolo_temperature)
                         # TODO : 实现优化MGD Loss和 CWD Loss
                         # refer：https://github.com/huangzongmou/yolov8_Distillation.git
-                        # soft_target_loss = distill_weight * MGDLossComputer(preds, teacher_pred)
+                        mgd_loss = distill_weight * MGDLossComputer(preds, teacher_pred)
+                        cwd_loss = torch.tensor([0])
 
                     # 计算 Hard Target 损失
                     self.loss, self.loss_items = self.criterion(preds, batch)
@@ -395,9 +410,13 @@ class BaseTrainer:
                 append_date(self.loss.item(),
                             soft_target_loss.item(),
                             ftloss.item(),
+                            mgd_loss.item(),
+                            cwd_loss.item(),
                             self.theta.item(),
                             self.beta.item(),
                             self.gamma.item(),
+                            self.sigma.item(),
+                            self.delta.item(),
                             self.xlsx_book,
                             self.xlsx_sheet,
                             self.xlsx_logger_dir)
