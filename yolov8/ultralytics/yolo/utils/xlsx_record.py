@@ -32,5 +32,7 @@ def append_date(hard_loss,
                 work_sheet,
                 save_path):
     work_sheet.append([hard_loss, soft_loss, attention_loss, mgd_loss, cwd_loss, theta, beta, gamma, sigma, delta])
-    work_book.save(save_path)
-
+    try:
+        work_book.save(save_path)
+    except PermissionError:  # 避免xlsx文件打开就被终止
+        return
