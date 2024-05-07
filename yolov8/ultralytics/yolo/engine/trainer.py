@@ -271,6 +271,12 @@ class BaseTrainer:
         self.sigma_sigmoid = nn.Sigmoid()
         self.delta_sigmoid = nn.Sigmoid()
 
+        # Distillation Hook
+        self.teacher_feature = []
+        self.student_feature = []
+        self.t_hook_remove_handles = []
+        self.s_hook_remove_handles = []
+
         # Logger
         self.xlsx_book, self.xlsx_sheet = create_loss_xlsx()
 
@@ -359,7 +365,7 @@ class BaseTrainer:
 
                 # Forward
                 with torch.cuda.amp.autocast(self.amp):
-                    s_f = get_s_feas_by_hook(self.model)  # hook机制
+                    self.student_feature, self.s_hook_remove_handles = get_s_feas_by_hook(self.model)  # hook机制
 
                     batch = self.preprocess_batch(batch)
                     preds = self.model(batch["img"])
@@ -367,15 +373,21 @@ class BaseTrainer:
                     # 计算 Attention Transform 损失
                     if opt.yolo_kd_switch:
                         with torch.no_grad():
-                            t_f = get_t_feas_by_hook(self.teacher_model)
+                            self.teacher_feature, self.t_hook_remove_handles = get_t_feas_by_hook(self.teacher_model)
                             teacher_pred = self.teacher_model(batch["img"])
                         # 获取target
                         targets = torch.cat((batch["batch_idx"].view(-1, 1),
                                              batch["cls"].view(-1, 1),
                                              batch["bboxes"]), 1)
-                        ftloss, ftloss_items = self.eat_loss(targets.to(self.device), t_f, s_f, opt.yolo_ratio)
-                        del t_f
-                    del s_f
+                        ftloss, ftloss_items = self.eat_loss(targets.to(self.device),
+                                                             self.teacher_feature,
+                                                             self.student_feature,
+                                                             opt.yolo_ratio)
+                        # 移除前向传播的 Hook，避免 deepcopy 失败
+                        for t_handle in self.t_hook_remove_handles:
+                            t_handle.remove()
+                    for s_handle in self.s_hook_remove_handles:
+                        s_handle.remove()
 
                     # 计算 Soft Target 损失
                     if opt.yolo_kd_switch:
@@ -499,8 +511,7 @@ class BaseTrainer:
         ckpt = {
             'epoch': self.epoch,
             'best_fitness': self.best_fitness,
-            # 'model': deepcopy(de_parallel(self.model)).half(),
-            'model': self.model.state_dict(),
+            'model': deepcopy(de_parallel(self.model)).half(),
             'ema': deepcopy(self.ema.ema).half(),
             'updates': self.ema.updates,
             'optimizer': self.optimizer.state_dict(),
