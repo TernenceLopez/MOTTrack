@@ -509,6 +509,8 @@ class BaseTrainer:
             'beta': self.beta,
             'gamma': self.gamma,
             'theta': self.theta,
+            'sigma': self.sigma,
+            'delta': self.delta,
             'version': __version__}
 
         # Save last, best and delete
