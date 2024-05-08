@@ -335,22 +335,24 @@ class SoftLoss:
         t_pred_bboxes = self.bbox_decode(anchor_points, t_pred_distri)
 
         _, target_bboxes, target_scores, fg_mask, _ = self.assigner(
-            pred_scores.detach().sigmoid(), (pred_bboxes.detach() * stride_tensor).type(gt_bboxes.dtype),
+            t_pred_scores.detach().sigmoid(), (t_pred_bboxes.detach() * stride_tensor).type(gt_bboxes.dtype),
             anchor_points * stride_tensor, gt_labels, gt_bboxes, mask_gt)
 
-        t_pred_bboxes /= stride_tensor
-        t_pred_scores = self.softmax(t_pred_scores)  # 教师网络预测结果需要经过一次softmax
-        t_scores_sum = max(t_pred_scores.sum(), 1)
+        # t_pred_bboxes /= stride_tensor  # teacher模型预测的boxes不需要除以stride
+        # TODO: 获取教师模型预测的scores
+        # t_pred_scores = self.softmax(t_pred_scores)  # 教师网络预测结果需要经过一次softmax
+        # t_scores_sum = max(t_pred_scores.sum(), 1)
+        target_scores_sum = max(target_scores.sum(), 1)
 
         # cls loss
-        loss[1] = self.bce(pred_scores, t_pred_scores.to(dtype)).sum() / t_scores_sum  # BCE
+        loss[1] = self.bce(pred_scores, target_scores.to(dtype)).sum() / target_scores_sum  # BCE
 
         # bbox loss
         # 教师网络预测的每一个锚框都需要计算损失
-        fg_mask = torch.ones(batch_size, pred_distri.shape[1], dtype=torch.bool).cuda()
+        # fg_mask = torch.ones(batch_size, pred_distri.shape[1], dtype=torch.bool).cuda()
         if fg_mask.sum():
-            loss[0], loss[2] = self.bbox_loss(pred_distri, pred_bboxes, anchor_points, t_pred_bboxes, t_pred_scores,
-                                              t_scores_sum, fg_mask)
+            loss[0], loss[2] = self.bbox_loss(pred_distri, pred_bboxes, anchor_points, t_pred_bboxes, target_scores,
+                                              target_scores_sum, fg_mask)
 
         loss[0] *= self.hyp.box  # box gain
         loss[1] *= self.hyp.cls  # cls gain
