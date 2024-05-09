@@ -10,7 +10,7 @@ weights
 result_plot/xlsx_dir
 
 # evaluation tools folder
-val_utils/
+val_utils/data
 
 # zip files
 *.zip
