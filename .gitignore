@@ -12,6 +12,9 @@ result_plot/xlsx_dir
 # evaluation tools folder
 val_utils/data
 
+# html static files
+yolov8/flask_remote_control/html/static/
+
 # zip files
 *.zip
 
