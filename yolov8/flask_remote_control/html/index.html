@@ -56,16 +56,19 @@
         }
         .video-container, .image-container {
             margin-bottom: 20px;
-            position: relative; /* Added for spinner positioning */
+            position: relative;
         }
         .video-container {
             flex: 1;
+            display: flex;
+            flex-direction: column;
         }
         video {
             width: 400px;
             height: 225px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
+            margin-bottom: 20px;
         }
         img {
             max-width: 100%;
@@ -73,7 +76,6 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
         }
-        /* Spinner styles */
         .spinner {
             display: none;
             border: 8px solid #f3f3f3;
@@ -98,10 +100,10 @@
     <div class="container">
         <div class="video-container">
             <video id="videoPreview" controls aria-label="视频预览"></video>
-            <div class="image-container">
+            <div class="image-container" id="imageContainer">
                 <img id="imageDisplay" src="./static/002.jpg" alt="替代图片" />
             </div>
-            <div class="spinner" id="spinner"></div> <!-- Moved spinner here -->
+            <div class="spinner" id="spinner"></div>
         </div>
         <div class="button-container">
             <input type="file" id="videoInput" accept="video/*" style="display:none" />
@@ -116,6 +118,7 @@
         const videoInput = document.getElementById('videoInput');
         const videoPreview = document.getElementById('videoPreview');
         const imageDisplay = document.getElementById('imageDisplay');
+        const imageContainer = document.getElementById('imageContainer');
         const spinner = document.getElementById('spinner');
         let videoFile = null;
 
@@ -151,33 +154,50 @@
             const formData = new FormData();
             formData.append('video', videoFile);
 
-            spinner.style.display = 'block'; // Show the spinner
+            spinner.style.display = 'block'; // 显示加载旋转动画
 
-            while (true) { // Infinite loop to keep trying
-                try {
-                    const response = await fetch('http://127.0.0.1:5000/upload_video', {
-                        method: 'POST',
-                        body: formData
-                    });
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload_video', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        const videoUrl = result.videoUrl; // 假设后端返回的 JSON 数据中包含视频 URL
-                        imageDisplay.style.display = 'none'; // Hide the image
-                        videoPreview.src = videoUrl;
-                        videoPreview.style.display = 'block'; // Ensure video is visible
-                        videoPreview.play(); // 上传后自动播放视频
-                        break; // Exit the loop when the response is received
-                    } else {
-                        console.error('上传失败');
+                if (response.ok) {
+                    const result = await response.json();
+                    const videoUrl = result.videoUrl; // 获取视频 URL
+                    const checkStatusUrl = result.statusUrl; // 获取状态检查 URL
+
+                    while (true) { // 无限循环以不断检查状态
+                        try {
+                            const statusResponse = await fetch(checkStatusUrl);
+                            if (statusResponse.ok) {
+                                const statusResult = await statusResponse.json();
+                                if (statusResult.status === 'complete') {
+                                    imageContainer.innerHTML = `<video id="processedVideoPreview" controls aria-label="处理后的视频预览" style="width: 100%; height: auto;"></video>`;
+                                    const processedVideoPreview = document.getElementById('processedVideoPreview');
+                                    processedVideoPreview.src = videoUrl;
+                                    processedVideoPreview.style.display = 'block'; // 确保视频可见
+                                    processedVideoPreview.play(); // 上传后自动播放视频
+                                    break; // 完成后退出循环
+                                } else {
+                                    console.log('处理未完成，继续等待...');
+                                }
+                            } else {
+                                console.error('检查状态失败');
+                            }
+                        } catch (error) {
+                            console.error('检查状态请求失败，重试中...', error);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // 等待 2 秒后重试
                     }
-                } catch (error) {
-                    console.error('请求失败，重试中...', error);
-                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
+                } else {
+                    console.error('上传失败');
                 }
+            } catch (error) {
+                console.error('请求失败', error);
             }
 
-            spinner.style.display = 'none'; // Hide the spinner
+            spinner.style.display = 'none'; // 隐藏加载旋转动画
         }
 
         function togglePlayPause() {
