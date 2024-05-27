@@ -240,7 +240,7 @@ class AutoBackend(nn.Module):
             nhwc = model.runtime.startswith("tensorflow")
             '''
         else:
-            from ultralytics.yolo.engine.exporter import EXPORT_FORMATS_TABLE
+            from yolov8.ultralytics.yolo.engine.exporter import EXPORT_FORMATS_TABLE
             raise TypeError(f"model='{w}' is not a supported model format. "
                             "See https://docs.ultralytics.com/tasks/detection/#export for help."
                             f"\n\n{EXPORT_FORMATS_TABLE}")
@@ -385,7 +385,7 @@ class AutoBackend(nn.Module):
         """
         # Return model type from model path, i.e. path='path/to/model.onnx' -> type=onnx
         # types = [pt, jit, onnx, xml, engine, coreml, saved_model, pb, tflite, edgetpu, tfjs, paddle]
-        from ultralytics.yolo.engine.exporter import export_formats
+        from yolov8.ultralytics.yolo.engine.exporter import export_formats
         sf = list(export_formats().Suffix)  # export suffixes
         if not is_url(p, check=False) and not isinstance(p, str):
             check_suffix(p, sf)  # checks

@@ -2,6 +2,19 @@
 
 import torch
 import serial.tools.list_ports
+import argparse
+import sys
+import os
+
+# 添加搜索路径
+yolov8_project_path = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.dirname(
+                    os.path.dirname(
+                        os.path.abspath(__file__)))))))
+sys.path.append(yolov8_project_path)
 
 from yolov8.ultralytics.yolo.engine.predictor import BasePredictor
 from yolov8.ultralytics.yolo.engine.results import Results
@@ -115,11 +128,9 @@ class DetectionPredictor(BasePredictor):  # 继承BasePredictor类
         # End of my Procession
 
 
-def predict(cfg=DEFAULT_CFG, use_python=False):
-    model = cfg.model or "yolov8n.pt"
-    source = cfg.source if cfg.source is not None else ROOT / "assets" if (ROOT / "assets").exists() \
-        else "https://ultralytics.com/images/bus.jpg"
-    # source = "F:/DropLet/YoloV8/yolov8/ultralytics/assets/486.0.jpg"
+def predict(opts, cfg=DEFAULT_CFG, use_python=False):
+    model = opts.yolo_weights
+    source = opts.source
 
     args = dict(model=model, source=source)
     if use_python:
@@ -130,37 +141,21 @@ def predict(cfg=DEFAULT_CFG, use_python=False):
         predictor.predict_cli()
 
 
+def parse_opt():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--yolo-weights', type=str, default="yolov8x.pt", help='model.pt path(s)')
+    parser.add_argument('--source', type=str, default="/home/elvis/shareFolder/MOT17_Trim.mp4", help='mp4 source')
+    parser.add_argument('--upload_dir', type=str, default="/home/elvis/shareFolder/MOTTrack_Git/yolov8/flask_remote_control", help='upload dir')
+
+    opt = parser.parse_args()
+    return opt
+
+
 if __name__ == "__main__":
-    # 读取串口列表
-    ports_list = list(serial.tools.list_ports.comports())
-    if len(ports_list) <= 0:
-        print("无串口设备")
-    else:
-        print("可用的串口设备如下: ")
-        print("%-10s %-30s %-10s" % ("num", "name", "number"))
-        for i in range(len(ports_list)):
-            comport = list(ports_list[i])
-            comport_number, comport_name = comport[0], comport[1]
-            print("%-10s %-30s %-10s" % (i, comport_name, comport_number))
+    opt = parse_opt()
+    print(sys.path)
+    print(os.getcwd())
 
-        # 打开串口：修改ports_list[x][0]第一个参数，来改变选择的CH340串口
-        # port_num = ports_list[4][0]
-        port_num = ports_list[2][0]
-
-        print("默认选择串口: %s" % port_num)
-        # 串口号: port_num, 波特率: 115200, 数据位: 8, 停止位: 1, 超时时间: 0.5秒
-        ser = serial.Serial(port=port_num, baudrate=115200, bytesize=serial.EIGHTBITS, stopbits=serial.STOPBITS_ONE,
-                            timeout=0.5)
-        if ser.isOpen():
-            print("打开串口成功, 串口号: %s" % ser.name)
-        else:
-            print("打开串口失败")
-
-        predict()
-
-        # 关闭串口
-        ser.close()
-        if ser.isOpen():
-            print("串口未关闭")
-        else:
-            print("串口已关闭")
+    # 更改当前工作目录为上传文件的目录
+    os.chdir(opt.upload_dir)
+    predict(opt)
