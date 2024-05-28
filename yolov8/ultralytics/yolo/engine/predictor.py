@@ -146,7 +146,8 @@ class BasePredictor:
         self.run_callbacks("on_predict_start")
         if self.args.verbose:
             LOGGER.info("")
-
+        # setup predict path mapping
+        self.process_store_path()
         # setup model
         if not self.model:
             self.setup_model(model)
