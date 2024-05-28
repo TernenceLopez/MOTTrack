@@ -150,7 +150,7 @@ class DetectionPredictor(BasePredictor):  # 继承BasePredictor类
         # if any(_ < 300 for _ in locs):  # any() 函数用于判断给定的可迭代参数 iterable 是否全部为 False,则返回 False,如果有一个为 True,则返回 True
         if any(_ < 300 for _ in locs_right):
             data = '1'  # 红灯，检测到液滴
-            self.ser.write(data.encode('utf-8'))
+            # self.ser.write(data.encode('utf-8'))
         else:
             data = '2'  # 绿灯
             # ser.write(data.encode('utf-8'))

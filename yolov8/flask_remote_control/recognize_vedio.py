@@ -79,7 +79,7 @@ def process_video(input_path):
         command = ['python', script_path, '--source', input_path, '--upload_dir', os.getcwd()]
         result = subprocess.run(command, capture_output=True, text=True)
 
-        if result.returncode == 1:
+        if result.returncode == 0:
             # 假设处理后的视频保存在output_path
             predict_result_path = os.path.join(
                                     os.path.dirname(
