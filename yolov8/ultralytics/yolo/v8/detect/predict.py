@@ -5,6 +5,7 @@ import serial.tools.list_ports
 import argparse
 import sys
 import os
+import json
 
 # 添加搜索路径
 yolov8_project_path = os.path.dirname(
@@ -22,9 +23,38 @@ from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, ROOT, ops
 from yolov8.ultralytics.yolo.utils.plotting import Annotator, colors, save_one_box
 
 
+class Command_return_body:
+    def __init__(self):
+        self.source_name = None
+
+
+# 信息传递对象
+clt_body = Command_return_body()
+
+
 class DetectionPredictor(BasePredictor):  # 继承BasePredictor类
     def __int__(self):
         self.ser = ser
+
+    def process_store_path(self):
+        source_file_name = clt_body.source_name
+        handle_file_name = self.save_dir.parts[-1]
+        try:
+            with open(os.path.join(os.path.dirname(self.save_dir), 'data.json'), 'r') as file:
+                json_data_from_file = file.read()
+            # 反序列化 JSON 字符串回字典
+            data_from_file = json.loads(json_data_from_file)
+        except FileNotFoundError as e:
+            data_from_file = {}
+
+        data_from_file[source_file_name] = handle_file_name
+
+        # 序列化字典为 JSON 字符串
+        json_data = json.dumps(data_from_file, indent=4)
+
+        with open(os.path.join(os.path.dirname(self.save_dir), 'data.json'), 'w') as file:
+            file.write(json_data)
+
 
     def get_annotator(self, img):
         return Annotator(img, line_width=self.args.line_thickness, example=str(self.model.names))
@@ -144,10 +174,13 @@ def predict(opts, cfg=DEFAULT_CFG, use_python=False):
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--yolo-weights', type=str, default="yolov8x.pt", help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default="/home/elvis/shareFolder/MOT17_Trim.mp4", help='mp4 source')
-    parser.add_argument('--upload_dir', type=str, default="/home/elvis/shareFolder/MOTTrack_Git/yolov8/flask_remote_control", help='upload dir')
+    parser.add_argument('--source', type=str, default="/home/elvis/shareFolder/MOT17.mp4", help='mp4 source')
+    parser.add_argument('--upload_dir', type=str,
+                        default="/home/elvis/shareFolder/MOTTrack_Git/yolov8/flask_remote_control", help='upload dir')
 
     opt = parser.parse_args()
+    clt_body.source_name = opt.source.split("/")[-1]
+
     return opt
 
 

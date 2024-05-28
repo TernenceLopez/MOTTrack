@@ -8,6 +8,7 @@ from PIL import Image
 import shutil
 import subprocess
 import uuid
+import json
 from werkzeug.utils import secure_filename
 
 # 不加这个会有CORS错误
@@ -84,12 +85,20 @@ def process_video(input_path):
                                     os.path.dirname(
                                         os.path.dirname(
                                             os.path.dirname(os.path.abspath(__file__)))), 'runs/detect')
-            # 获取当前目录下的所有文件夹
-            folders = [folder for folder in os.listdir(predict_result_path) if
-                       os.path.isdir(os.path.join(predict_result_path, folder))]
-            # 排序文件夹列表，按照最后修改时间降序排列
-            folders.sort(key=lambda x: os.path.getmtime(os.path.join(predict_result_path, x)), reverse=True)
-            predict_result_path = os.path.join(predict_result_path, folders[0], input_path.split('/')[-1])
+            # 使用最近修改时间获取视频的预测结果存放目录
+            # # 获取当前目录下的所有文件夹
+            # folders = [folder for folder in os.listdir(predict_result_path) if
+            #            os.path.isdir(os.path.join(predict_result_path, folder))]
+            # # 排序文件夹列表，按照最后修改时间降序排列
+            # folders.sort(key=lambda x: os.path.getmtime(os.path.join(predict_result_path, x)), reverse=True)
+            # predict_result_path = os.path.join(predict_result_path, folders[0], input_path.split('/')[-1])
+
+            # 使用predict.py脚本中记录的映射关系获取视频预测结果存放目录
+            with open(os.path.join(predict_result_path, 'data.json'), 'r') as file:
+                json_data_from_file = file.read()
+            # 反序列化 JSON 字符串回字典
+            data_from_file = json.loads(json_data_from_file)
+            predict_result_path = os.path.join(predict_result_path, data_from_file[input_path.split("/")[-1]], input_path.split("/")[-1])
 
             return predict_result_path
         else:
