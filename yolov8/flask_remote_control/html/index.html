@@ -111,6 +111,7 @@
             <button onclick="cancelUpload()" aria-label="取消上传">取消上传</button>
             <button onclick="sendToBackend()" aria-label="传递到后端">传递到后端</button>
             <button onclick="togglePlayPause()" aria-label="自动播放">自动播放</button>
+            <button id="downloadButton" style="display:none" onclick="downloadVideo()" aria-label="下载视频">下载视频</button>
         </div>
     </div>
 
@@ -120,7 +121,9 @@
         const imageDisplay = document.getElementById('imageDisplay');
         const imageContainer = document.getElementById('imageContainer');
         const spinner = document.getElementById('spinner');
+        const downloadButton = document.getElementById('downloadButton');
         let videoFile = null;
+        let processedVideoUrl = null;
 
         function uploadVideo() {
             videoInput.click();
@@ -143,6 +146,7 @@
             videoFile = null;
             videoPreview.src = '';
             videoInput.value = '';
+            downloadButton.style.display = 'none';
         }
 
         async function sendToBackend() {
@@ -173,11 +177,13 @@
                             if (statusResponse.ok) {
                                 const statusResult = await statusResponse.json();
                                 if (statusResult.status === 'complete') {
+                                    processedVideoUrl = videoUrl;
                                     imageContainer.innerHTML = `<video id="processedVideoPreview" controls aria-label="处理后的视频预览" style="width: 100%; height: auto;"></video>`;
                                     const processedVideoPreview = document.getElementById('processedVideoPreview');
-                                    processedVideoPreview.src = videoUrl;
-                                    processedVideoPreview.style.display = 'block'; // 确保视频可见
+                                    processedVideoPreview.src = processedVideoUrl;
+                                    processedVideoPreview.style.display = 'block';
                                     processedVideoPreview.play(); // 上传后自动播放视频
+                                    downloadButton.style.display = 'block'; // 显示下载按钮
                                     break; // 完成后退出循环
                                 } else {
                                     console.log('处理未完成，继续等待...');
@@ -205,6 +211,19 @@
                 videoPreview.play();
             } else {
                 videoPreview.pause();
+            }
+        }
+
+        function downloadVideo() {
+            if (processedVideoUrl) {
+                const a = document.createElement('a');
+                a.href = processedVideoUrl;
+                a.download = 'processed_video.mp4'; // 你可以设置想要的文件名
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert('没有可下载的视频');
             }
         }
     </script>
