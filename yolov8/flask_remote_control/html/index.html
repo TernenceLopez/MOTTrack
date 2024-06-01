@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOT of Video Online</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-image: url('./static/001.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            color: #fff;
+        }
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5em;
+            color: #FFD700;
+        }
+        .container {
+            display: flex;
+            align-items: flex-start;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            margin-left: 20px;
+        }
+        .button-container button {
+            width: 150px;
+            height: 50px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            background-color: #87CEFA;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: black;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .button-container button:hover {
+            background-color: #00BFFF;
+            transform: scale(1.05);
+        }
+        .video-container, .image-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .video-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        video {
+            width: 400px;
+            height: 225px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .spinner {
+            display: none;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>MOT of Video Online</h1>
+    <div class="container">
+        <div class="video-container">
+            <video id="videoPreview" controls aria-label="视频预览"></video>
+            <div class="image-container" id="imageContainer">
+                <img id="imageDisplay" src="./static/002.jpg" alt="替代图片" />
+            </div>
+            <div class="spinner" id="spinner"></div>
+        </div>
+        <div class="button-container">
+            <input type="file" id="videoInput" accept="video/*" style="display:none" />
+            <button onclick="uploadVideo()" aria-label="上传视频">上传视频</button>
+            <button onclick="cancelUpload()" aria-label="取消上传">取消上传</button>
+            <button onclick="sendToBackend()" aria-label="传递到后端">传递到后端</button>
+            <button onclick="togglePlayPause()" aria-label="自动播放">自动播放</button>
+            <button id="downloadButton" style="display:none" onclick="downloadVideo()" aria-label="下载视频">下载视频</button>
+        </div>
+    </div>
+
+    <script>
+        const videoInput = document.getElementById('videoInput');
+        const videoPreview = document.getElementById('videoPreview');
+        const imageDisplay = document.getElementById('imageDisplay');
+        const imageContainer = document.getElementById('imageContainer');
+        const spinner = document.getElementById('spinner');
+        const downloadButton = document.getElementById('downloadButton');
+        let videoFile = null;
+        let processedVideoUrl = null;
+
+        function uploadVideo() {
+            videoInput.click();
+        }
+
+        videoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('video/')) {
+                    alert('请选择一个视频文件');
+                    return;
+                }
+                videoFile = file;
+                const videoURL = URL.createObjectURL(file);
+                videoPreview.src = videoURL;
+            }
+        });
+
+        function cancelUpload() {
+            videoFile = null;
+            videoPreview.src = '';
+            videoInput.value = '';
+            downloadButton.style.display = 'none';
+        }
+
+        async function sendToBackend() {
+            if (!videoFile) {
+                alert('请先上传视频');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('video', videoFile);
+
+            spinner.style.display = 'block'; // 显示加载旋转动画
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload_video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const videoUrl = result.videoUrl; // 获取视频 URL
+                    const checkStatusUrl = result.statusUrl; // 获取状态检查 URL
+
+                    while (true) { // 无限循环以不断检查状态
+                        try {
+                            const statusResponse = await fetch(checkStatusUrl);
+                            if (statusResponse.ok) {
+                                const statusResult = await statusResponse.json();
+                                if (statusResult.status === 'complete') {
+                                    processedVideoUrl = videoUrl;
+                                    imageContainer.innerHTML = `<video id="processedVideoPreview" controls aria-label="处理后的视频预览" style="width: 100%; height: auto;"></video>`;
+                                    const processedVideoPreview = document.getElementById('processedVideoPreview');
+                                    processedVideoPreview.src = processedVideoUrl;
+                                    processedVideoPreview.style.display = 'block';
+                                    processedVideoPreview.play(); // 上传后自动播放视频
+                                    downloadButton.style.display = 'block'; // 显示下载按钮
+                                    break; // 完成后退出循环
+                                } else {
+                                    console.log('处理未完成，继续等待...');
+                                }
+                            } else {
+                                console.error('检查状态失败');
+                            }
+                        } catch (error) {
+                            console.error('检查状态请求失败，重试中...', error);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // 等待 2 秒后重试
+                    }
+                } else {
+                    console.error('上传失败');
+                }
+            } catch (error) {
+                console.error('请求失败', error);
+            }
+
+            spinner.style.display = 'none'; // 隐藏加载旋转动画
+        }
+
+        function togglePlayPause() {
+            if (videoPreview.paused) {
+                videoPreview.play();
+            } else {
+                videoPreview.pause();
+            }
+        }
+
+        function downloadVideo() {
+            if (processedVideoUrl) {
+                const a = document.createElement('a');
+                a.href = processedVideoUrl;
+                a.download = 'processed_video.mp4'; // 你可以设置想要的文件名
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert('没有可下载的视频');
+            }
+        }
+    </script>
+</body>
+</html>

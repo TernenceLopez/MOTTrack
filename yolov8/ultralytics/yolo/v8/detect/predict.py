@@ -2,6 +2,20 @@
 
 import torch
 import serial.tools.list_ports
+import argparse
+import sys
+import os
+import json
+
+# 添加搜索路径
+yolov8_project_path = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.dirname(
+                    os.path.dirname(
+                        os.path.abspath(__file__)))))))
+sys.path.append(yolov8_project_path)
 
 from yolov8.ultralytics.yolo.engine.predictor import BasePredictor
 from yolov8.ultralytics.yolo.engine.results import Results
@@ -9,9 +23,38 @@ from yolov8.ultralytics.yolo.utils import DEFAULT_CFG, ROOT, ops
 from yolov8.ultralytics.yolo.utils.plotting import Annotator, colors, save_one_box
 
 
+class Command_return_body:
+    def __init__(self):
+        self.source_name = None
+
+
+# 信息传递对象
+clt_body = Command_return_body()
+
+
 class DetectionPredictor(BasePredictor):  # 继承BasePredictor类
     def __int__(self):
         self.ser = ser
+
+    def process_store_path(self):
+        source_file_name = clt_body.source_name
+        handle_file_name = self.save_dir.parts[-1]
+        try:
+            with open(os.path.join(os.path.dirname(self.save_dir), 'data.json'), 'r') as file:
+                json_data_from_file = file.read()
+            # 反序列化 JSON 字符串回字典
+            data_from_file = json.loads(json_data_from_file)
+        except FileNotFoundError as e:
+            data_from_file = {}
+
+        data_from_file[source_file_name] = handle_file_name
+
+        # 序列化字典为 JSON 字符串
+        json_data = json.dumps(data_from_file, indent=4)
+
+        with open(os.path.join(os.path.dirname(self.save_dir), 'data.json'), 'w') as file:
+            file.write(json_data)
+
 
     def get_annotator(self, img):
         return Annotator(img, line_width=self.args.line_thickness, example=str(self.model.names))
@@ -107,7 +150,7 @@ class DetectionPredictor(BasePredictor):  # 继承BasePredictor类
         # if any(_ < 300 for _ in locs):  # any() 函数用于判断给定的可迭代参数 iterable 是否全部为 False,则返回 False,如果有一个为 True,则返回 True
         if any(_ < 300 for _ in locs_right):
             data = '1'  # 红灯，检测到液滴
-            self.ser.write(data.encode('utf-8'))
+            # self.ser.write(data.encode('utf-8'))
         else:
             data = '2'  # 绿灯
             # ser.write(data.encode('utf-8'))
@@ -115,11 +158,9 @@ class DetectionPredictor(BasePredictor):  # 继承BasePredictor类
         # End of my Procession
 
 
-def predict(cfg=DEFAULT_CFG, use_python=False):
-    model = cfg.model or "yolov8n.pt"
-    source = cfg.source if cfg.source is not None else ROOT / "assets" if (ROOT / "assets").exists() \
-        else "https://ultralytics.com/images/bus.jpg"
-    # source = "F:/DropLet/YoloV8/yolov8/ultralytics/assets/486.0.jpg"
+def predict(opts, cfg=DEFAULT_CFG, use_python=False):
+    model = opts.yolo_weights
+    source = opts.source
 
     args = dict(model=model, source=source)
     if use_python:
@@ -130,37 +171,24 @@ def predict(cfg=DEFAULT_CFG, use_python=False):
         predictor.predict_cli()
 
 
+def parse_opt():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--yolo-weights', type=str, default="yolov8x.pt", help='model.pt path(s)')
+    parser.add_argument('--source', type=str, default="/home/elvis/shareFolder/MOT17.mp4", help='mp4 source')
+    parser.add_argument('--upload_dir', type=str,
+                        default="/home/elvis/shareFolder/MOTTrack_Git/yolov8/flask_remote_control", help='upload dir')
+
+    opt = parser.parse_args()
+    clt_body.source_name = opt.source.split("/")[-1]
+
+    return opt
+
+
 if __name__ == "__main__":
-    # 读取串口列表
-    ports_list = list(serial.tools.list_ports.comports())
-    if len(ports_list) <= 0:
-        print("无串口设备")
-    else:
-        print("可用的串口设备如下: ")
-        print("%-10s %-30s %-10s" % ("num", "name", "number"))
-        for i in range(len(ports_list)):
-            comport = list(ports_list[i])
-            comport_number, comport_name = comport[0], comport[1]
-            print("%-10s %-30s %-10s" % (i, comport_name, comport_number))
+    opt = parse_opt()
+    print(sys.path)
+    print(os.getcwd())
 
-        # 打开串口：修改ports_list[x][0]第一个参数，来改变选择的CH340串口
-        # port_num = ports_list[4][0]
-        port_num = ports_list[2][0]
-
-        print("默认选择串口: %s" % port_num)
-        # 串口号: port_num, 波特率: 115200, 数据位: 8, 停止位: 1, 超时时间: 0.5秒
-        ser = serial.Serial(port=port_num, baudrate=115200, bytesize=serial.EIGHTBITS, stopbits=serial.STOPBITS_ONE,
-                            timeout=0.5)
-        if ser.isOpen():
-            print("打开串口成功, 串口号: %s" % ser.name)
-        else:
-            print("打开串口失败")
-
-        predict()
-
-        # 关闭串口
-        ser.close()
-        if ser.isOpen():
-            print("串口未关闭")
-        else:
-            print("串口已关闭")
+    # 更改当前工作目录为上传文件的目录
+    os.chdir(opt.upload_dir)
+    predict(opt)
