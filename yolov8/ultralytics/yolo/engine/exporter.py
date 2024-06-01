@@ -882,7 +882,7 @@ def export(cfg=DEFAULT_CFG):
     #         TypeError(f'Unsupported model type {cfg.model}')
     # exporter(model=model)
 
-    from ultralytics import YOLO
+    from yolov8.ultralytics import YOLO
     model = YOLO(cfg.model)
     model.export(**vars(cfg))
 
@@ -893,3 +893,7 @@ if __name__ == "__main__":
     yolo mode=export model=yolov8n.yaml format=onnx
     """
     export()
+    configuration = DEFAULT_CFG
+    configuration.model = 'yolov8n_mot17.pt'
+    configuration.format = "onnx"
+    export(cfg=configuration)
